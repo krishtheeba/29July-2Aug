@@ -1,0 +1,384 @@
+Linux- File, Process
+
+Process-Data under CPU
+
+Process- PID
+
+UserProcess   SystemProcess
+
+
+
+OFF=> ON=> POST=> MBR/GPT=> Bootloader(grub2)=> kernel=> process (SystemD)
+                                                            |
+							System Process (?)
+                                                          |
+							getty	Login:		
+								Passwd
+							|
+						Shell (CLI)  ----GUI(Desktop)
+                                                  |
+						user IO Process	
+
+UserProcess					System Process
+
+- by user					- by SystemD 
+-TTy:pts/port					-TTy:?
+-created after login				- before login
+-parent process is working shell		- parent process is SystemD								
+
+
+- start--> Running				-start-->Running (R+) 
+          |  |						stop
+	wait  Resume==> exit
+	stop					Sesion Leader (SID)
+
+
+
+p1-101	p2-102	p3-103     p4-104  p5-105    p6-106  p7-107
+
+----------------------     --------------    --------------
+|				|		|
+Group1				Group2		Group3
+PGID:101                    PGID:104          PGID:106
+
+p1,p4,p6
+|
+---------
+Session
+SID:101
+
+
+ssh host01                  sshd.service 
+|				|
+user process			Active or Running state (System Process)
+
+/bin/file1     ===> .exe in Windows
+ |
+/etc/file1  ===> config parameters
+
+/etc/systemd/system/file1.service ===> Active
+
+ExecStart=/bin/file1     --config=/etc/file1
+
+
+OL[56]			OL[78]
+
+init PID-1      SystemD PID-1  cgroup- kernel subsystem- 
+|		 |
+p1               P1
+|         |-------|------|------|
+p2       P1      p2 ...........Pn
+|
+p3
+
+
+service         systemctl
+
+
+service sshd start           systemctl start sshd.service
+
+systemdunits- 
+
+1. service   
+
+2. scope
+						
+3. slice  - blueprint of process
+          |-----user.slice
+          |----- system.slice
+         |-----machine.slice   
+4. mount
+
+5. socket
+...
+systemctl                    (or)   systectl list-unit-files
+
+systemctl -t service  (or)    systemctl list-units --type service
+
+systemctl start sshd.service
+systemctl stop sshd
+systemctl restart sshd  
+--------------------------------------> root user
+
+systemctl status sshd  -----------> all user
+
+systemctl enable sshd-----> 
+
+============================================================================
+
+
+How to start my program  automically during os loading process?
+
+(or)
+
+How to convert user process to system process?
+
+step1: create a service file --->  /etc/systemd/system/file.service
+                   |
+         step2:   [Unit]
+		Description= "Write your own service desc"
+		  [Service]
+		ExecStart= "map binary file"
+		  [Install]
+		wantedBy=multi.user.target
+
+step 3: reload daemon      systemctl daemon-reload
+
+step 4:  start the service automatically   systemctl enable file.service
+
+step 5: test the service  
+				|----------tail /var/log/mylog1.log
+				systemctl start fileservice
+				systemctl status file.service
+                          	systemctl stop file.service
+				|
+				tail /var/log/mylog1.log
+step 6: restart the system   systemctl reboot
+
+
+step 7:  vi p1.sh
+         ----
+      :wq
+    systemctl restart file.service
+
+--------------------------------------------------------------------------
+
+ps -e | grep p1.sh
+
+<pid>  ?  p1.sh
+
+================================================================================
+
+systemctl get-default     (or)   runlevel
+                                  5  3
+                                  |  |-------------------------previos level
+                                 current level
+				5- Graphical (GUI)
+				3- multi.user.target (CLI)
+
+systemctl isolate graphical.target   multi-user.target
+
+-----------------------------------------------------------
+
+systemd-analyze time - overall time for booting
+
+systemd-analyze critical-chain  - hierarchical view of all processes in booting 
+
+systemd-analyze blame - list of service during booting process
+                      - sorting based on time taken on booting
+systemctl -t service - ascending order
+--------------------------------------------------------------
+
+NTP - network Time Protocol
+
+at    atd.service
+|
+|----> single job
+one-time future job
+
+
+cron
+=====
+
+
+# * * * * * username /root/prl/p1.sh
+
+[minute]  [Hour]  [Day-of-month] [Month-of-year]  [Day-of-week] [user] [command to execute]
+ 0-50      0-23    1-31            1-12              0-6			|
+                                jan feb mar ..dec    sun tue      | 		|	
+							         userA		absolute path <file.sh>
+
+
+10th june 8:30AM  execute /root/project/backup.sh
+
+crontab -e    --> nanoeditor
+|
+
+30 08 10 jun * /root/project/backup.sh
+
+* * * * *---> every day
+|  | | |------every month
+|  |  every day
+|  every hour 
+|
+every min
+
+from 8AM to 6PM
+
+* 8-18
+  
+from 08AM and 6PM
+
+*  8,16
+
+*/2     */2
+|        |------every hours
+|
+ever 2 min
+
+* match everything
+- range
+, separate values
+/ step value
+
+
+execute p1.sh  6AM  10AM  2 PM 7PM - per day
+
+0 06,10,14,19 p1.sh
+0 06-10,14,19  p1.sh
+
+==========================================================================================
+predefined cron value
+----------------------
+@yearly     is same   0 0 1 1 *
+@yearly /root/project/p1.sh
+
+@monthly   is same as 0 0 1 * *
+@weekly    is same as 0 0 * * sun
+@daily        "        0 0 * * * 
+@hourly     "          0 * * * *
+
+@reboot p1.sh  
+
+=====================================================================================
+
+kernel module----> loadable kernel object file
+
+file : p1.c
+----------
+int main(){..}
+--------
+
+gcc -c p1.c
+-------------> p1.o    loadable object file--- not executable
+
+p1.c
+-----
+void init_..(){
+	printk(..);
+}
+void remote(){...
+}
+
+-------------------
+gcc -c p1.c----------> p1.ko   // kernel object file - module
+
+
+
++-------------------------------------------------------------------------+
+		[system call ]
+			|
+	[Filesystem]   ======> PCB | IPC ; SCHEDUL ; Net ; Mem |
+	
+		|
+		[DeviceDriver]        .ko module----> access driver code
+		|
+		[DeviceController]   (asm)
++-------------------------------------------------------------------------+
+			|
+			USB (device)
+
+
+		VLC Player : song- application
++-------------------------------------------------------------------------+
+	
+Developer : p1.ko
+
+insmod /root/project/test_driver/tool_chain/pb.ko      load kernel module
+insmod /root/project/test_driver/tool_chain/pa.ko    depends on pb.ko
+insmod /root/project/test_driver/tool_chain/p1.ko    depends on pa.ko
+
+rmmod p1.ko     - unload kernel module
+
+VS
+
+admin : p1.ko
+
+modprobe p1
+		==> .ko extension is not required
+               ==> file path mapping is not required
+	       ===> loads the depend module and p1 module
+
+
+modprobe -rv p1  #  unload module
+
+lsmod    # list of all loaded module
+
+modinfo modulename # info on module
+
+=================================================================================
+
+/proc    /
+|       |
+|       |
+proc    xfs
+|        |
+|        |
+CPU Ram  HD
+
+
+/proc---> virtual files- not storage unit-- size 0
+
+/proc					/etc
+ |					|
+change kernel parameter			change kernel parameter
+   |                                     |-----reboot is required
+runtime						|- change is permanent
+|---reboot is not required
+
+modprobe --show-depends bluetooth
+
++=========================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
