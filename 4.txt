@@ -1,0 +1,368 @@
+Partition
+----------
+
+file
+file structure 
+ 
+/
+|
+------------------
+|	|	  |
+/	/
+
+
+filesystem
+  -structure- file organized
+            - file in disk
+	 - file info details
+
+
+user
+----------------------
+Kernel: systemcall()
+        |
+        Filesytem  ==>
+       |
+	DD
+	|
+	DC
+-------------------------------
+HW
+
+=========================================
+
+student@host~]$ mkdir /D1
+               Permission denied
+
+vi p1.txt
+Hello
+:wq
+
+cat p1.txt
+Hello
+
+mkdir D1
+Success
+
+cd D1
+vi p1.txt
+DATA
+:wq
+
+student@host D1]$ ls
+p1.txt
+
+cat pp.txt
+
+No such file
+
+-----------------------------------------------------------------------
+
+Logical view of filesystem
+
+|Boot Block  |  Super Block   | Inode block | Data Block|
+--------------
+             |
+
+Super Block
+----------
+-> type of file system
+-> block size
+-> no of inodes
+
+Inode Block
+-----------
+-> file ownership
+-> file per
+-> file type
+-> time last/last modification
+..
+
+-> pointer to data blocks
+
+
+file Decriptor -FD
+
+systemcall()--> FD
+std FD
+FD=0 <stdin>
+FD=1 <stdout>
+FD=2 <stderr>
+
+
+FD= 3 to  2 power 32/64    valid FD   
+cat p1.txt
+|
+open(p1.txt)= 3-------------------->  File table 
+                                      -----------
+	- file exists			permission test(3, user,mode(r,w,x))    Super bLock
+
+
+FD=-1  - wont access filetable
+   |
+No fuch file exist
+
+student@host~]$ cat /etc/shadow
+Permission denied
+
+open(/etc/shadow)
+|
+3
+Success--------------------> file table (student(1001),3,....)
+				|
+Permission denied       --------
+
+Student@host~]$ls
+p1.txt
+              cat p1.txt
+	open(p1.txt)
+	3
+	Success---------------file table(Student(1001...)
+				|
+				OK
+				|-------inode
+					|------Data
+
+
+fd=open(file.txt)  appln
+---------------------------
+|
+systemcalls
+|
+filesystem   ---> superblock---inode---.........data block...
+						|
+						dd
+						|
+						dc
+			-------------------------------------------
+						storage
+
+======================================================================================
+
+Student@host~]$ cp fileA fileB
+Student@host~]$ cp /CDROM/file1  ~/file2
+Student@host~]$ scp host01:/root/filex    ~/filey
++=====++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ 	|
+	systemcall()
+	|
+	read()
+	|
+	filesystem             write()
+	|
+	iso9660			 ext4/xfs		
+	|---------------------------|
+	DD
+	|
+	DC
+	|
+------------------------------------------------
+		HW
+
+
+
+/proc				/
+|				|
+proc				xfs
+|				|
+CPU				HD
+
+
+--------------------------------------------------------------------
+      /D1                  /		/D2    mount points
+    |			|		|
+--------------------------------------------------------------
+	File systes
+-------------------------------------------------------------
+		|
+		/dev/sdb1
+
+============================================================================================
+
+1. read disk
+	|
+2.  partition     tools(fdisk,cdisk,parted,gparted)
+	|
+3.  create a file system   ===> mkfs.<filesystemType>   (or)  mkfs -t <filesystemType>
+	|
+4. create a mount directory  mkdir /D1
+ 	|
+5.  Mount a device to kernel ==> mount <partition> <directory>
+	|
+	df => displays the mounted filesystem
+ 
+6.update the /etc/fstab    ==> automount
+
+Vi /etc/fstab
+..
+...
+
+/dev/xvdb3 /D3 xfs defaults 0 0
+ (or)
+UUID=<...> /D3 xfs defaults 0 0             blkid
+(or)
+LABEL=LAB   /D3 xfs defaults 0 0
+
+:wq
+
+
+same UUID  ---> uuidgen
+
+tune2fs /dev/xvdb2 -U <.....>
+
+vi /etc/fstab
+
+<..> /D3...
+
+e2label /dev/xvdb3 LAB        (ext3 , ext4)
+xfs_admin -L LAB /dev/xvdb3   (xfs)
+
+
+partitionName mountpoint fsType defaults 0    0
+                                         dump  fscheck - order
+
+
+
+7. test   df -Th   
+
+To unmount-->  umount <partitionName>   (or)   umount <Mount point>
+
+
+
+ext    ext2     ext2        ext3 -2TB 
+        |        |
+	minix    Linux 0.12
+
+----------------------------------------------------------------------------------------
+
+
+file: p1.txt
+Hello   ==> user leve
+--------------------
+|
+meta data
+|
+-------------------
+
+(01010) raw data
+
+
+-----------
+  os
+-----------
+  SHM			|Data	|
+----------- 		---------
+
+  res
+-----------
+
+
+CPU 
+
+cpu---> cache (miss) 
+	
+  <--- cache hit
+
+
+/dev/null
+
+/dev/zero
+
+
+1) /dev/null
+--------------------|--- clean purpose
+
+systemctl is-active httpd  > /dev/null 2>&1
+
+
+2)/dev/zero
+
+
+dd  if=<inputfile>   of=<outputfile>   
+
+dd if=/dev/xvdb1   of= disk.img
+
+dd if=/dev/cdrom/OL.img of=/mnt/media/OL
+
+
+dd if=/dev/zero   of =p1
+
+
+====================================================================
+
+Network configuration
+----------------------
+
+1. Network Manager (GUI)  ===> NetworkManager.service
+
+2. Network Manager Test User Interface (nmtui)  - GUI
+
+3. Network Configuration files
+
+/etc/sysconfig/network-scripts/ifcfg-<interfaceName>
+                                |
+				Configuration Parameters --> key=Value ----> Can edit parameter
+
+					|
+					systemctl start network
+					systemctl status network
+					|
+					edit ifcfg-eth0
+					systemctl restart network  => Required
+
+
+/etc/hosts
+
+/etc/ resolv.conf   -> admin cant edit
+                    -> NetworkManager
+
+  /etc/sysconfig/network-scripts/ifcfg-<interfaceName>
+			|
+		 DNS1= "123.122.1.2"
+		 DNS2= "133.323.334.555"
+
+systectl restart network
+
+/etc/resolv.conf
+ DNS1 123.122.1.2
+ DNS2 133.323.334.555
+
+####################################################################################
+
+nmcli-  
+	collection of objects
+			|
+			each object
+				|------collection of commands
+		
+					|------- 1 or more options
+nmcli help	
+
+					
+#################################################################################### 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
