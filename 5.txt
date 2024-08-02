@@ -1,0 +1,182 @@
+Recap
+-----
+
+1. Disk--> Partition (fdisk,parted,cdisk)
+ 
+2. fdisk 
+   n create partition
+   p /e  --> started partition      parttion Id: 83
+		/dev/xvdb
+			|--/dev/xvdb1
+			|--/dev/xvdb2
+			83
+
+3. filesystem creation 
+		mkfs.xfs /dev/xvdb1
+4. mount point : mkdir /D3
+5. mount -o ro /dev/xvdb1 /D3
+6. df -Th
+7. update /etc/fstab
+    /dev/xvdb1 /D xfs defaults 0 0
+    LABEL=""    
+    UUID=<..>
+
+-----------------
+blkid---> uuid for each partition
+
+============================================================================
+        9GB                         5GB      (used Size)
+         DB (oracle)               CGI(Web)
+            |			    |
+User space /D1 			   /D2
+------------------------------------------------
+FIlesystem  xfs                 xfs
+----------------------------------------------------
+       /dev/xvdb1             /dev/xvdb2
+    10 GB                   10GB
+
+
+LOgical Volume Management
+--------------------------
+
+
+User space
+--------------------------------------------
+Kernel space
+Logical Volume
+----------------------------------
+Volume group
+---------------------------------------
+  Physical Volume
+-----------------------------------------
+HD /physcal/virtual disk   HW
+
+dnf install lvm2  (or) yum install lvm2
+
+Database(Oracle-5GB->)
+  |
+mkdir /D1
+mount    /dev/mapper/VolumeGroup-lv1  /D1
+================================================================
+File system  mkfs.xfs /dev/volumeGroup/lv1   (or)  
+ mkfs.xfs /dev/mapper/VolumeGroup-lv1
+......................................................................
+---------------------------------------------------------
+lv1(5GB)     lv2(10GB)  ==> logical volume   
+ lvcreate -v -L 500m  -n lv1 myvolg
+-------------------------------------------------------
+  (30 GB)    Volume Group      
+ vgcreate -v myvolg /dev/xvdb1
+-------------------------------------------------------
+/dev/xvdb1           /dev/xvdb2         /dev/xvdb3   Physical volume 
+  pvcreate -v /dev/xvdb1 /dev/xvdb2
+.......................................................................
+===========================================================================
+/dev/xvdb1                  /dev/xvdb2    /dev/xvdb3    8e-> Partition ID
+10GB                       10GB             10GB       ==> 
+
+
+pvs
+pvdisplay
+pvscan
+
+vgs
+vgdisplay
+vgscan
+
+lvs
+lvscan
+lvdisplay
+
+
+extend the logical volume   : lvextend -L +500m -volumegroup/logicalvolume
+
+extend the volume group : vgextend Volumegroup /partition
+detach the partition from volume group : vgreduce volumegroup /dev/partition
+
+==========================================================================================
+
+Oracle On Oracle (DB)
+---------------------
+
+cat file1.txt|grep bash
+
+|		|
+
+p1 ---->      p2
+
+p1- 0x123
+p2-0x2222
+
+p1 <=> p2
+
+Shared Memory
+-----
+os
+
+----
+
+SHM
+----
+
+resi
+-----
+
+[]   
+p1    
+
+
+Semaphore --> counter  - lock/unlock
+
+S=3    []   []   []
+       p1
+S--
+            p2
+
+S--
+S=1             p3
+S--
+S=0
+.....
+
+kernel.shmm
+kernel.shmax
+kernel.semsl
+
+
+/proc/sys/kernel/shm
+/proc/sys/kernel/sem
+
+
+
+sempahore--> race condition
+
+huge page--> page fault 
+					MMU
+  exe -Process created    ------------Page Table	
+					offet+Addr  -> Segment Addr
+   |
+  store---------------------|					   |------------|
+cpu--- cache  ------->  memory |				   |            |
+       -----                   |--------|    ------------------->  |            |
+       cache                   |--------| Seg ment Addr       Swap out
+								Swap in
+       cache hit
+       cache miss
+
+Huge page
+
+no missing offset
+continuous
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
+
+
+
